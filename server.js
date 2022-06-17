@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config();
 const express = require('express');
 const routes = require('./controllers'); //look for index.js in routes
 // import sequelize connection

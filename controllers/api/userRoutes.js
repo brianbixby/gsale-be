@@ -1,7 +1,9 @@
 "use strict";
 
+require('dotenv').config();
 const router = require("express").Router();
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { User, Profile, Category } = require("../../models");
 const bearerAuth = require("../../lib/bearer-auth-middleware");
 
@@ -36,8 +38,7 @@ router.post("/login", async (req, res) => {
         if (!user) {
             return res.status(403).send("invalid credentials");
         }
-        const validPassword = await user.checkPassword(req.body.password);
-        if (validPassword) { 
+        if (await bcrypt.compare(req.body.password, user.password)) { 
             const profile = await Profile.findOne({ where: { user_id: user.id }, include: { all: true } });
             const category = await Category.findByPk(profile.category_id);
             const token = jwt.sign({ userId: user.id, profileId: profile.id }, process.env.JWT_SECRET, { expiresIn: "8h" });
@@ -53,7 +54,7 @@ router.post("/login", async (req, res) => {
 // token signin, validates token and keeps users signedin
 router.get("/token/login", bearerAuth, async (req, res) => {
     try {
-        const user = await User.findOne({ id: req.userId });
+        const user = await User.findOne({ where:{ id: req.userId }});
         if (!user) {
             return res.status(404).json({ message: "No user with that ID" });
         } else {
